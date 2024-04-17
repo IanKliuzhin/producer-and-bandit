@@ -1,0 +1,101 @@
+body {
+    margin: 0;
+    font-family: "Tahoma", sans-serif;
+    background-color: #404040;
+    display: grid;
+    place-items: center;
+}
+
+main {
+    display: grid;
+    place-items: center;
+    gap: 40px;
+    padding: 50px;
+    background-color: white;
+    border: 2px solid black;
+}
+
+.wrapper {
+    display: grid;
+    place-items: center;
+    gap: 15px;
+    place-items: center;
+}
+
+hr {
+    width: 100%;
+}
+
+#final {
+    width: 1000px;
+    display: none;
+}
+
+.notVisible {
+    overflow: hidden;
+    height: 0;
+    opacity: 0;
+    transition: height 0ms 800ms, opacity 800ms 0ms;
+}
+
+.visible {
+    height: auto; opacity: 1;
+    transition: height 0ms 0ms, opacity 800ms 0ms;
+}
+
+/* global */
+a,
+h1,
+h2,
+h3,
+h4 {
+    text-decoration: none;
+    user-select: none;
+    margin: 0;
+}
+
+#canvas {
+    background-color: #30c0df;
+    border: 2px solid black;
+    display: block;
+    margin: auto;
+    cursor: pointer;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 150%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
