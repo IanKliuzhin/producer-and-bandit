@@ -3,8 +3,19 @@
   "version": "1.0.0",
   "description": "Producer & Bandit multiplayer game",
   "main": "server.js",
+  "scripts": {
+    "start": "node server",
+    "dev": "nodemon server"
+  },
+  "type": "module",
   "repository": "git@github.com:IanKliuzhin/producer-and-bandit.git",
   "author": "Yan Klyuzhin <klyuzhin@uchi.ru>",
   "license": "MIT",
-  "private": false
+  "private": false,
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
 }
