@@ -1,0 +1,10 @@
+{
+  "name": "producer-and-bandit",
+  "version": "1.0.0",
+  "description": "Producer & Bandit multiplayer game",
+  "main": "server.js",
+  "repository": "git@github.com:IanKliuzhin/producer-and-bandit.git",
+  "author": "Yan Klyuzhin <klyuzhin@uchi.ru>",
+  "license": "MIT",
+  "private": false
+}
