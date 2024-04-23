@@ -37,7 +37,7 @@ lobby.on('connection', (socket) => {
 
     if (expectantId && expectantSocket) {
         console.log('Found expectant in lobby:', expectantId)
-        const namespace = `/${expectantId}__${socket.userId}`
+        const namespace = `/game__${expectantId}__${socket.userId}`
         console.log('namespace', namespace)
         const roles = ['producer', 'bandit'].sort(() => Math.random() - Math.random())
         socket.emit('partner-found', namespace, roles[0])
@@ -49,10 +49,23 @@ lobby.on('connection', (socket) => {
         expectantId = socket.userId
     }
 
+    socket.on('ready', () => {
+        console.log(socket.id, 'ready')
+        socket.broadcast.emit('partner-ready')
+    })
+
     socket.on('disconnect', () => {
         if (socket.userId === expectantId) {
             expectantId = undefined
         }
-        console.log(`User ${socket.userId} disconnected`)
+        console.log(`User ${socket.userId} disconnected from lobby`)
     })
+})
+
+const game = io.of(/\/game__\w+__\w+/)
+
+game.on('connection', (socket) => {
+    socket.id = socket.handshake.auth.id
+    socket.role = socket.handshake.auth.role
+    console.log(socket.id, socket.role, 'connected to game')
 })

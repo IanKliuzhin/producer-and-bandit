@@ -7,6 +7,15 @@ const finalScrn = document.getElementById("final");
 const GAME_DURATION_S = 60;
 const TIMER_START_DELAY_S = 6;
 
+const role = sessionStorage.getItem('role')
+const namespace = sessionStorage.getItem('namespace')
+const id = searchParams.get('id')
+// eslint-disable-next-line no-undef
+const gameSocket = io(namespace, { autoConnect: false })
+gameSocket.auth = { id, role }
+gameSocket.auth = { id, role }
+gameSocket.connect()
+
 class Drawer {
   game;
   sctx;

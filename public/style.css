@@ -86,3 +86,13 @@ h4 {
     display: inline-block;
     width: 180px;
 }
+
+.instructions {
+    opacity: 0;
+    width: 256px;
+}
+
+.instructions.visible {
+    opacity: 1;
+    transition: opacity 1s;
+}
