@@ -22,7 +22,7 @@ export default [
             '@stylistic/js': stylisticJs,
         },
         rules: {
-            'indent': ['error', 4],
+            'indent': ['error', 4, { SwitchCase: 1 }],
             'semi': ['error', 'never'],
             'max-len': [
                 'error',

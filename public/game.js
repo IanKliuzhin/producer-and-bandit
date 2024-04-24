@@ -116,7 +116,7 @@ class Drawer {
         //   sctx.strokeStyle = pointXCoord < tax.taxes[0].x ? 'black' : gradient
         this.sctx.strokeStyle = this.COLORS.black
         this.sctx.stroke()
-    // sctx.save();
+        // sctx.save();
     }
 
     drawDashedCrosshair = (x, y, color) => {
@@ -135,7 +135,7 @@ class Drawer {
         this.sctx.lineTo(DISPLAY_WIDTH, y)
 
         this.sctx.stroke()
-    // sctx.save();
+        // sctx.save();
     }
 
     drawRectangle = (x, y, width, height, color) => {
@@ -174,12 +174,12 @@ class Taxing {
         this.game = game
         this.taxes = taxes.map(([startSecond, endSecond, rate]) => {
             const framesTillIn =
-        game.ball.X / game.FRAME_SHIFT_X +
-        ((game.timerStartDelay + startSecond) * 1000) / game.FRAME_DURATION_MS -
-        game.ui.DISPLAY_WIDTH / game.FRAME_SHIFT_X
+                game.ball.X / game.FRAME_SHIFT_X +
+                ((game.timerStartDelay + startSecond) * 1000) / game.FRAME_DURATION_MS -
+                game.ui.DISPLAY_WIDTH / game.FRAME_SHIFT_X
             const framesTillOut =
-        game.ball.X / game.FRAME_SHIFT_X +
-        ((game.timerStartDelay + endSecond) * 1000) / game.FRAME_DURATION_MS
+                game.ball.X / game.FRAME_SHIFT_X +
+                ((game.timerStartDelay + endSecond) * 1000) / game.FRAME_DURATION_MS
             return { rate, framesTillIn, framesTillOut }
         })
     }
@@ -208,8 +208,7 @@ class Taxing {
             this.currentRate = 0
             for (let { rate, framesTillIn, framesTillOut } of this.taxes) {
                 if (framesPassed > framesTillIn && framesPassed < framesTillOut) {
-                    const startX =
-            (framesTillIn - framesPassed) * FRAME_SHIFT_X + DISPLAY_WIDTH
+                    const startX = (framesTillIn - framesPassed) * FRAME_SHIFT_X + DISPLAY_WIDTH
                     let endX = (framesTillOut - framesPassed) * FRAME_SHIFT_X
                     if (endX > DISPLAY_WIDTH) endX = DISPLAY_WIDTH
 
@@ -258,9 +257,7 @@ class Ball {
     }
 
     getScorePerSecondByY = (y) => {
-        const result = Math.abs(
-            Math.floor((100 * (y - this.MIN_BOTTOM_Y)) / this.MAX_AMPLITUDE_Y)
-        )
+        const result = Math.abs(Math.floor((100 * (y - this.MIN_BOTTOM_Y)) / this.MAX_AMPLITUDE_Y))
         return result
     }
 
@@ -270,8 +267,7 @@ class Ball {
         const bottomY = this.y + this.RADIUS
         const topY = this.y - this.RADIUS
 
-        this.gravity =
-      this.MIN_GRAVITY * (1 + (1.23 * this.getScorePerSecondByY(this.y)) / 100)
+        this.gravity = this.MIN_GRAVITY * (1 + (1.23 * this.getScorePerSecondByY(this.y)) / 100)
         this.fallingSpeed += this.gravity
 
         const isNextYLowerThenFloor = bottomY + this.fallingSpeed > FLOOR_Y
@@ -366,41 +362,31 @@ class UI {
         const durationMinutes = Math.floor(game.durationInSeconds / 60)
         const durationSeconds = game.durationInSeconds % 60
         this.timerDuration = `${String(durationMinutes).padStart(2, '00')}:${String(
-            durationSeconds
+            durationSeconds,
         ).padStart(2, '00')}`
     }
 
     drawBorders = () => {
         const { drawer, framesPassed, FRAME_SHIFT_X } = this.game
 
-        drawer.drawHorizontalDashedLine(
-            this.FLOOR_Y,
-            framesPassed * FRAME_SHIFT_X,
-            'lineGray',
-            1
-        )
-        drawer.drawHorizontalDashedLine(
-            this.CEILING_Y,
-            framesPassed * FRAME_SHIFT_X,
-            'lineGray',
-            1
-        )
+        drawer.drawHorizontalDashedLine(this.FLOOR_Y, framesPassed * FRAME_SHIFT_X, 'lineGray', 1)
+        drawer.drawHorizontalDashedLine(this.CEILING_Y, framesPassed * FRAME_SHIFT_X, 'lineGray', 1)
     }
 
     draw = () => {
         const { currentStage, STAGES } = this.game
 
         switch (currentStage) {
-        case STAGES.getReady:
-            this.drawGetReady()
-            break
-        case STAGES.gameOver:
-            this.drawGameOver()
-            break
-        case STAGES.play:
-        default:
-            this.drawScore()
-            this.drawTimer()
+            case STAGES.getReady:
+                this.drawGetReady()
+                break
+            case STAGES.gameOver:
+                this.drawGameOver()
+                break
+            case STAGES.play:
+            default:
+                this.drawScore()
+                this.drawTimer()
         }
     }
 
@@ -518,9 +504,10 @@ class UI {
         const passedSeconds = timerSecondsPassed % 60
 
         drawer.drawText({
-            text: `${String(passedMinutes).padStart(2, '00')}:${String(
-                passedSeconds
-            ).padStart(2, '00')} / ${this.timerDuration}`,
+            text: `${String(passedMinutes).padStart(2, '00')}:${String(passedSeconds).padStart(
+                2,
+                '00',
+            )} / ${this.timerDuration}`,
             x: 200,
             y: 70,
             font: 'tahoma_28_bold',
@@ -544,13 +531,7 @@ class UI {
 
         const lineX = ballX + framesLeft * FRAME_SHIFT_X + FRAME_SHIFT_X / 2
 
-        this.game.drawer.drawVerticalLine(
-            lineX,
-            this.CEILING_Y + 10,
-            scrn.height,
-            3.5,
-            'black'
-        )
+        this.game.drawer.drawVerticalLine(lineX, this.CEILING_Y + 10, scrn.height, 3.5, 'black')
         this.game.drawer.drawText({
             text: 'Finish',
             x: lineX - 45,
@@ -615,7 +596,7 @@ class Game {
 
         this.durationInSeconds = durationInSeconds
         this.durationInFrames =
-      ((timerStartDelay + durationInSeconds) * 1000) / this.FRAME_DURATION_MS
+            ((timerStartDelay + durationInSeconds) * 1000) / this.FRAME_DURATION_MS
         this.timerStartDelay = timerStartDelay
 
         this.drawer = new Drawer(this)
@@ -627,22 +608,22 @@ class Game {
 
         this.scrn.addEventListener('click', () => {
             switch (this.currentStage) {
-            case this.STAGES.getReady:
-                this.currentStage = this.STAGES.play
-                this.framesPassed = 0
-                break
-            case this.STAGES.play:
-                this.ball.flap()
-                this.results.flapsBySeconds.push(this.framesPassed)
-                this.results.flapsByScorePerSecond.push(this.scorePerSecond)
-                this.results.flapsByTaxPerSecond.push(this.taxing.currentRate)
-                break
-        // case state.finalScreenGameStep:
-        // state.currentGameStep = state.indexGameStep;
-        // point.speed = 0;
-        // point.y = 100;
-        // UI.score.currentGameStep = 0;
-        // break;
+                case this.STAGES.getReady:
+                    this.currentStage = this.STAGES.play
+                    this.framesPassed = 0
+                    break
+                case this.STAGES.play:
+                    this.ball.flap()
+                    this.results.flapsBySeconds.push(this.framesPassed)
+                    this.results.flapsByScorePerSecond.push(this.scorePerSecond)
+                    this.results.flapsByTaxPerSecond.push(this.taxing.currentRate)
+                    break
+                // case state.finalScreenGameStep:
+                // state.currentGameStep = state.indexGameStep;
+                // point.speed = 0;
+                // point.y = 100;
+                // UI.score.currentGameStep = 0;
+                // break;
             }
         })
     }
@@ -664,10 +645,7 @@ class Game {
         if (this.currentStage === this.STAGES.play) {
             const framesLeft = this.durationInFrames - this.framesPassed
 
-            if (
-                this.ball.X + framesLeft * this.FRAME_SHIFT_X <=
-        this.ui.DISPLAY_WIDTH
-            ) {
+            if (this.ball.X + framesLeft * this.FRAME_SHIFT_X <= this.ui.DISPLAY_WIDTH) {
                 this.ui.drawFinish(framesLeft)
             }
 
@@ -712,10 +690,7 @@ class Game {
 
         results.flapsBySeconds = results.flapsBySeconds
             .map((flapFrame) =>
-                (
-                    (flapFrame * this.FRAME_DURATION_MS) / 1000 -
-          this.timerStartDelay
-                ).toFixed(2)
+                ((flapFrame * this.FRAME_DURATION_MS) / 1000 - this.timerStartDelay).toFixed(2),
             )
             .join(', ')
         results.scoresBySeconds = results.scoresBySeconds.join(', ')
@@ -750,12 +725,6 @@ class Game {
     }
 }
 
-const game = new Game(
-    scrn,
-    finalScrn,
-    GAME_DURATION_S,
-    TIMER_START_DELAY_S,
-    taxes
-)
+const game = new Game(scrn, finalScrn, GAME_DURATION_S, TIMER_START_DELAY_S, taxes)
 
 game.run()
