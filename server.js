@@ -42,6 +42,8 @@ lobby.on('connection', (socket) => {
         const roles = ['producer', 'bandit'].sort(() => Math.random() - Math.random())
         socket.emit('partner-found', namespace, roles[0])
         expectantSocket.emit('partner-found', namespace, roles[1])
+        socket.partner = expectantSocket
+        expectantSocket.partner = socket
         expectantId = undefined
     } else {
         console.log('There are no expectants in the lobby. Adding', socket.userId)
@@ -55,10 +57,21 @@ lobby.on('connection', (socket) => {
     })
 
     socket.on('disconnect', () => {
-        if (socket.userId === expectantId) {
-            expectantId = undefined
-        }
         console.log(`User ${socket.userId} disconnected from lobby`)
+        if (expectantId) {
+            console.log('There was an expectant at the moment')
+            if (socket.userId === expectantId) {
+                console.log('He was the user that disconnected. Clearing expectantId')
+                expectantId = undefined
+            } else {
+                console.log('But he wasn\'t the user that disconnected')
+            }
+        } else {
+            console.log('There wasn\'t any expectants at the moment. Making ex-partner of disconnected user expectant', socket.partner.userId)
+            expectantId = socket.partner.userId
+            delete socket.partner.partner
+            socket.partner.emit('partner-disconnected')
+        }
     })
 })
 

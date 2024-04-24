@@ -9,7 +9,6 @@ let role
 
 const connectionElement = document.querySelector('.connection')
 const statusElement = connectionElement.querySelector('.status')
-const partnerElement = connectionElement.querySelector('.partner')
 const roleElement = connectionElement.querySelector('.role')
 const showInstructionsBtn = connectionElement.querySelector('.show_instructions')
 
@@ -24,13 +23,29 @@ lobbySocket.on('partner-found', (namespace, assignedRole) => {
     sessionStorage.setItem('role', assignedRole)
     role = assignedRole
     connectionElement.classList.add('connected')
+    const partnerElement = document.createElement('div')
+    partnerElement.classList.add('partner')
     partnerElement.textContent = 'A partner was found.'
+    roleElement.before(partnerElement)
     roleElement.textContent = `Your role is ${role}`
 })
 
 lobbySocket.on('partner-not-found', () => {
     console.log('A partner was not found')
     statusElement.textContent = 'Waiting for someone to connect...'
+})
+
+lobbySocket.on('partner-disconnected', () => {
+    console.log('Partner disconnected')
+    connectionElement.classList.remove('connected')
+    const partnerElement = document.createElement('div')
+    partnerElement.classList.add('partner')
+    partnerElement.textContent = 'Previous partner disconnected. Waiting for another one...'
+    roleElement.before(partnerElement)
+    roleElement.textContent = ''
+    sessionStorage.removeItem('role')
+    sessionStorage.removeItem('namespace')
+    role = undefined
 })
 
 const showInstructions = () => {
