@@ -96,3 +96,11 @@ h4 {
     opacity: 1;
     transition: opacity 1s;
 }
+
+.game_container {
+    display: flex;
+}
+
+button.set_tax {
+    visibility: hidden;
+}

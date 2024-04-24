@@ -16,6 +16,15 @@ gameSocket.auth = { id, role }
 gameSocket.auth = { id, role }
 gameSocket.connect()
 
+if (role === 'bandit') {
+    const taxBtn = document.querySelector('button.set_tax')
+    taxBtn.style.visibility = 'visible'
+    taxBtn.addEventListener('click', (e) => {
+        e.preventDefault()
+        gameSocket.emit('set_tax', Math.round(Math.random() * 100))
+    })
+}
+
 class Drawer {
     game
     sctx
@@ -191,16 +200,50 @@ class Taxing {
         return Math.abs(Math.floor((MAX_AMPLITUDE_Y * score) / 100 - FLOOR_Y))
     }
 
-    draw = () => {
+    addTax = (rate) => {
+        console.log('Tax received, rate', rate)
         const {
-            ui,
             ball,
-            drawer,
-            currentStage,
-            STAGES,
+            ui,
             framesPassed,
+            durationInFrames,
             FRAME_SHIFT_X,
+            timerStartDelay,
+            secondsPassed,
+            FRAME_DURATION_MS,
         } = this.game
+
+        if (secondsPassed > timerStartDelay) {
+            const framesTillIn =
+                ball.X / FRAME_SHIFT_X + framesPassed - ui.DISPLAY_WIDTH / FRAME_SHIFT_X
+            if (this.taxes.length > 0) {
+                this.taxes[this.taxes.length - 1].framesTillOut =
+                    ball.X / FRAME_SHIFT_X + framesPassed
+            }
+
+            const framesTillOut = ball.X / FRAME_SHIFT_X + durationInFrames
+            console.log('Added tax', { rate, framesTillIn, framesTillOut })
+            this.taxes.push({ rate, framesTillIn, framesTillOut })
+        } else {
+            const framesTillIn =
+              game.ball.X / FRAME_SHIFT_X +
+              (timerStartDelay * 1000) / FRAME_DURATION_MS -
+              ui.DISPLAY_WIDTH / FRAME_SHIFT_X
+            const framesTillOut = ball.X / FRAME_SHIFT_X + durationInFrames
+            console.log('Added/changed first tax:', { rate, framesTillIn, framesTillOut })
+            this.taxes[0] = { framesTillIn, framesTillOut, rate }
+        }
+
+        console.log('Taxes:')
+        for (let { rate, framesTillIn, framesTillOut } of this.taxes) {
+            console.log('framesTillIn', framesTillIn)
+            console.log('framesTillOut', framesTillOut)
+            console.log('rate', rate)
+        }
+    }
+
+    draw = () => {
+        const { ui, ball, drawer, currentStage, STAGES, framesPassed, FRAME_SHIFT_X } = this.game
         const { DISPLAY_WIDTH, FLOOR_Y } = ui
         const { X: ballX } = ball
 
@@ -626,6 +669,8 @@ class Game {
                 // break;
             }
         })
+
+        gameSocket.on('set_tax', this.taxing.addTax)
     }
 
     run = () => {

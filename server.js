@@ -81,4 +81,9 @@ game.on('connection', (socket) => {
     socket.id = socket.handshake.auth.id
     socket.role = socket.handshake.auth.role
     console.log(socket.id, socket.role, 'connected to game')
+
+    socket.on('set_tax', (rate) => {
+        console.log('Tax received, rate', rate)
+        game.emit('set_tax', rate)
+    })
 })
