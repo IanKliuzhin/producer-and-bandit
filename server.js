@@ -2,7 +2,10 @@ import http from 'http'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import express from 'express'
+import { initializeApp } from 'firebase/app'
+import { getDatabase, ref, set } from 'firebase/database'
 import { Server } from 'socket.io'
+import { firebaseConfig } from './firebaseConfig.js'
 
 const PORT = process.env.PORT || 3000
 const app = express()
@@ -11,6 +14,8 @@ const io = new Server(server, {
     connectionStateRecovery: true,
     cleanupEmptyChildNamespaces: true,
 })
+const firebaseApp = initializeApp(firebaseConfig)
+const database = getDatabase(firebaseApp)
 
 app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), 'public')))
 
@@ -100,5 +105,11 @@ game.on('connection', (socket) => {
     socket.on('current_score', (scorePerSecond, currentRate) => {
         console.log('Score per second', scorePerSecond, 'Current rate', currentRate)
         socket.broadcast.emit('current_score', scorePerSecond, currentRate)
+    })
+
+    socket.on('results', (results) => {
+        set(ref(database, socket.nsp.name), {
+            ...results,
+        })
     })
 })

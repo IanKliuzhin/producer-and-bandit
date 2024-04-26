@@ -765,10 +765,7 @@ class Game {
         results.flapsByScorePerSecond = results.flapsByScorePerSecond.join(', ')
         results.flapsByTaxPerSecond = results.flapsByTaxPerSecond.join(', ')
 
-        // eslint-disable-next-line no-undef
-        dbFunctions.set(dbFunctions.ref(db, namespace), {
-            ...results,
-        })
+        gameSocket.emit('results', results)
     }
 
     endGame = () => {
