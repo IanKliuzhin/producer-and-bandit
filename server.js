@@ -86,4 +86,14 @@ game.on('connection', (socket) => {
         console.log('Tax received, rate', rate)
         game.emit('set_tax', rate)
     })
+
+    socket.on('start', () => {
+        console.log('Started')
+        socket.broadcast.emit('start')
+    })
+
+    socket.on('flap', (framesPassed, secondsPassed) => {
+        console.log('Flapped')
+        socket.broadcast.emit('flap', framesPassed, secondsPassed)
+    })
 })

@@ -649,26 +649,45 @@ class Game {
 
         this.currentStage = this.STAGES.getReady
 
-        this.scrn.addEventListener('click', () => {
-            switch (this.currentStage) {
-                case this.STAGES.getReady:
-                    this.currentStage = this.STAGES.play
-                    this.framesPassed = 0
-                    break
-                case this.STAGES.play:
-                    this.ball.flap()
-                    this.results.flapsBySeconds.push(this.framesPassed)
-                    this.results.flapsByScorePerSecond.push(this.scorePerSecond)
-                    this.results.flapsByTaxPerSecond.push(this.taxing.currentRate)
-                    break
-                // case state.finalScreenGameStep:
-                // state.currentGameStep = state.indexGameStep;
-                // point.speed = 0;
-                // point.y = 100;
-                // UI.score.currentGameStep = 0;
-                // break;
-            }
-        })
+        if (role === 'producer') {
+            this.scrn.addEventListener('click', () => {
+                switch (this.currentStage) {
+                    case this.STAGES.getReady:
+                        this.currentStage = this.STAGES.play
+                        this.framesPassed = 0
+                        gameSocket.emit('start')
+                        break
+                    case this.STAGES.play:
+                        this.ball.flap()
+                        gameSocket.emit('flap', this.framesPassed, this.secondsPassed)
+                        this.results.flapsBySeconds.push(this.framesPassed)
+                        this.results.flapsByScorePerSecond.push(this.scorePerSecond)
+                        this.results.flapsByTaxPerSecond.push(this.taxing.currentRate)
+                        break
+                    // case state.finalScreenGameStep:
+                    // state.currentGameStep = state.indexGameStep;
+                    // point.speed = 0;
+                    // point.y = 100;
+                    // UI.score.currentGameStep = 0;
+                    // break;
+                }
+            })
+        }
+
+        if (role === 'bandit') {
+            gameSocket.on('start', () => {
+                console.log('Started')
+                this.currentStage = this.STAGES.play
+                this.framesPassed = 0
+            })
+
+            gameSocket.on('flap', (framesPassed, secondsPassed) => {
+                console.log('Flapped')
+                this.framesPassed = framesPassed
+                this.secondsPassed = secondsPassed
+                this.ball.flap()
+            })
+        }
 
         gameSocket.on('set_tax', this.taxing.addTax)
     }
@@ -694,7 +713,7 @@ class Game {
                 this.ui.drawFinish(framesLeft)
             }
 
-            if (this.timerSecondsPassed >= this.durationInSeconds) this.endGame()
+            if (framesLeft < 0) this.endGame()
 
             if (this.framesPassed % (1000 / this.FRAME_DURATION_MS) === 0) {
                 this.update()
