@@ -1,5 +1,5 @@
 const searchParams = new URLSearchParams(window.location.search)
-const taxes = JSON.parse(searchParams.get('taxes'))
+const id = searchParams.get('id')
 
 const scrn = document.getElementById('canvas')
 const finalScrn = document.getElementById('final')
@@ -9,7 +9,6 @@ const TIMER_START_DELAY_S = 6
 
 const role = sessionStorage.getItem('role')
 const namespace = sessionStorage.getItem('namespace')
-const id = searchParams.get('id')
 // eslint-disable-next-line no-undef
 const gameSocket = io(namespace, { autoConnect: false })
 window.gameSocket = gameSocket
@@ -180,18 +179,8 @@ class Taxing {
     taxes = []
     currentRate
 
-    constructor(game, taxes) {
+    constructor(game) {
         this.game = game
-        this.taxes = taxes.map(([startSecond, endSecond, rate]) => {
-            const framesTillIn =
-                game.ball.X / game.FRAME_SHIFT_X +
-                ((game.timerStartDelay + startSecond) * 1000) / game.FRAME_DURATION_MS -
-                game.ui.DISPLAY_WIDTH / game.FRAME_SHIFT_X
-            const framesTillOut =
-                game.ball.X / game.FRAME_SHIFT_X +
-                ((game.timerStartDelay + endSecond) * 1000) / game.FRAME_DURATION_MS
-            return { rate, framesTillIn, framesTillOut }
-        })
     }
 
     getYByScorePerSecond = (score) => {
@@ -622,7 +611,7 @@ class Game {
 
     hasTimerFinished = false
 
-    constructor(scrn, finalScrn, durationInSeconds, timerStartDelay, taxes) {
+    constructor(scrn, finalScrn, durationInSeconds, timerStartDelay) {
         this.scrn = scrn
         this.finalScrn = finalScrn
         this.scrn.tabIndex = 1
@@ -635,7 +624,7 @@ class Game {
         this.drawer = new Drawer(this)
         this.ui = new UI(this)
         this.ball = new Ball(this) // should be after ui
-        this.taxing = new Taxing(this, taxes) // should be after ball & ui
+        this.taxing = new Taxing(this) // should be after ball & ui
 
         this.currentStage = this.STAGES.getReady
 
@@ -788,6 +777,6 @@ class Game {
     }
 }
 
-const game = new Game(scrn, finalScrn, GAME_DURATION_S, TIMER_START_DELAY_S, taxes)
+const game = new Game(scrn, finalScrn, GAME_DURATION_S, TIMER_START_DELAY_S)
 
 game.run()
