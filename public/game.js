@@ -621,17 +621,6 @@ class Game {
 
     hasTimerFinished = false
 
-    results = {
-        scoresBySeconds: [],
-        flapsBySeconds: [],
-        flapsByScorePerSecond: [],
-        flapsByTaxPerSecond: [],
-        taxesBySeconds: [],
-        produced: 0,
-        taxed: 0,
-        profit: 0,
-    }
-
     constructor(scrn, finalScrn, durationInSeconds, timerStartDelay, taxes) {
         this.scrn = scrn
         this.finalScrn = finalScrn
@@ -650,6 +639,17 @@ class Game {
         this.currentStage = this.STAGES.getReady
 
         if (role === 'producer') {
+            this.results = {
+                scoresBySeconds: [],
+                flapsBySeconds: [],
+                flapsByScorePerSecond: [],
+                flapsByTaxPerSecond: [],
+                taxesBySeconds: [],
+                produced: 0,
+                taxed: 0,
+                profit: 0,
+            }
+
             this.scrn.addEventListener('click', () => {
                 switch (this.currentStage) {
                     case this.STAGES.getReady:
@@ -689,7 +689,7 @@ class Game {
             })
 
             gameSocket.on('current_score', (scorePerSecond, currentRate) => {
-                this.saveScores(scorePerSecond, currentRate)
+                this.updateScores(scorePerSecond, currentRate)
             })
         }
 
@@ -731,16 +731,19 @@ class Game {
             this.timerSecondsPassed++
 
             if (role === 'producer') {
+                this.updateScores(this.scorePerSecond, -this.taxing.currentRate)
                 this.saveScores(this.scorePerSecond, -this.taxing.currentRate)
                 gameSocket.emit('current_score', this.scorePerSecond, -this.taxing.currentRate)
             }
         }
     }
 
-    saveScores = (scorePerSecond, currentRate) => {
+    updateScores = (scorePerSecond, currentRate) => {
         this.scoreProduced += scorePerSecond
         this.scoreTaxed -= currentRate
+    }
 
+    saveScores = (scorePerSecond, currentRate) => {
         this.results.scoresBySeconds.push(scorePerSecond)
         this.results.taxesBySeconds.push(currentRate)
     }
@@ -762,14 +765,10 @@ class Game {
         results.flapsByScorePerSecond = results.flapsByScorePerSecond.join(', ')
         results.flapsByTaxPerSecond = results.flapsByTaxPerSecond.join(', ')
 
-        const searchParams = new URLSearchParams(window.location.search)
-        const id = searchParams.get('id')
-        if (id) {
-            // eslint-disable-next-line no-undef
-            dbFunctions.set(dbFunctions.ref(db, id), {
-                ...results,
-            })
-        }
+        // eslint-disable-next-line no-undef
+        dbFunctions.set(dbFunctions.ref(db, namespace), {
+            ...results,
+        })
     }
 
     endGame = () => {
