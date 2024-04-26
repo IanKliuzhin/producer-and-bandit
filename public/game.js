@@ -9,21 +9,11 @@ const TIMER_START_DELAY_S = 6
 
 const role = sessionStorage.getItem('role')
 const namespace = sessionStorage.getItem('namespace')
+
 // eslint-disable-next-line no-undef
 const gameSocket = io(namespace, { autoConnect: false })
 window.gameSocket = gameSocket
-gameSocket.auth = { id, role }
-gameSocket.auth = { id, role }
-gameSocket.connect()
-
-if (role === 'bandit') {
-    const taxBtn = document.querySelector('button.set_tax')
-    taxBtn.style.visibility = 'visible'
-    taxBtn.addEventListener('click', (e) => {
-        e.preventDefault()
-        gameSocket.emit('set_tax', Math.round(Math.random() * 100))
-    })
-}
+gameSocket.auth = { id, role: this.role }
 
 class Drawer {
     game
@@ -581,6 +571,9 @@ class Game {
     ball
     ui
 
+    role
+    socket
+
     scrn
     finalScrn
 
@@ -611,7 +604,10 @@ class Game {
 
     hasTimerFinished = false
 
-    constructor(scrn, finalScrn, durationInSeconds, timerStartDelay) {
+    constructor(scrn, finalScrn, durationInSeconds, timerStartDelay, role, socket) {
+        this.role = role
+        this.socket = socket
+
         this.scrn = scrn
         this.finalScrn = finalScrn
         this.scrn.tabIndex = 1
@@ -628,7 +624,18 @@ class Game {
 
         this.currentStage = this.STAGES.getReady
 
-        if (role === 'producer') {
+        this.socket.connect()
+
+        if (this.role === 'bandit') {
+            const taxBtn = document.querySelector('button.set_tax')
+            taxBtn.style.visibility = 'visible'
+            taxBtn.addEventListener('click', (e) => {
+                e.preventDefault()
+                this.socket.emit('set_tax', Math.round(Math.random() * 100))
+            })
+        }
+
+        if (this.role === 'producer') {
             this.results = {
                 scoresBySeconds: [],
                 flapsBySeconds: [],
@@ -645,11 +652,11 @@ class Game {
                     case this.STAGES.getReady:
                         this.currentStage = this.STAGES.play
                         this.framesPassed = 0
-                        gameSocket.emit('start')
+                        this.socket.emit('start')
                         break
                     case this.STAGES.play:
                         this.ball.flap()
-                        gameSocket.emit('flap', this.framesPassed, this.secondsPassed)
+                        this.socket.emit('flap', this.framesPassed, this.secondsPassed)
                         this.results.flapsBySeconds.push(this.framesPassed)
                         this.results.flapsByScorePerSecond.push(this.scorePerSecond)
                         this.results.flapsByTaxPerSecond.push(this.taxing.currentRate)
@@ -664,26 +671,26 @@ class Game {
             })
         }
 
-        if (role === 'bandit') {
-            gameSocket.on('start', () => {
+        if (this.role === 'bandit') {
+            this.socket.on('start', () => {
                 console.log('Started')
                 this.currentStage = this.STAGES.play
                 this.framesPassed = 0
             })
 
-            gameSocket.on('flap', (framesPassed, secondsPassed) => {
+            this.socket.on('flap', (framesPassed, secondsPassed) => {
                 console.log('Flapped')
                 this.framesPassed = framesPassed
                 this.secondsPassed = secondsPassed
                 this.ball.flap()
             })
 
-            gameSocket.on('current_score', (scorePerSecond, currentRate) => {
+            this.socket.on('current_score', (scorePerSecond, currentRate) => {
                 this.updateScores(scorePerSecond, currentRate)
             })
         }
 
-        gameSocket.on('set_tax', this.taxing.addTax)
+        this.socket.on('set_tax', this.taxing.addTax)
     }
 
     run = () => {
@@ -720,10 +727,10 @@ class Game {
         if (this.secondsPassed >= this.timerStartDelay + 1) {
             this.timerSecondsPassed++
 
-            if (role === 'producer') {
+            if (this.role === 'producer') {
                 this.updateScores(this.scorePerSecond, -this.taxing.currentRate)
                 this.saveScores(this.scorePerSecond, -this.taxing.currentRate)
-                gameSocket.emit('current_score', this.scorePerSecond, -this.taxing.currentRate)
+                this.socket.emit('current_score', this.scorePerSecond, -this.taxing.currentRate)
             }
         }
     }
@@ -755,7 +762,7 @@ class Game {
         results.flapsByScorePerSecond = results.flapsByScorePerSecond.join(', ')
         results.flapsByTaxPerSecond = results.flapsByTaxPerSecond.join(', ')
 
-        gameSocket.emit('results', results)
+        this.socket.emit('results', results)
     }
 
     endGame = () => {
@@ -771,12 +778,12 @@ class Game {
             this.finalScrn.classList.remove('notVisible')
         }, 1500)
 
-        if (role === 'producer') {
+        if (this.role === 'producer') {
             this.sendResults()
         }
     }
 }
 
-const game = new Game(scrn, finalScrn, GAME_DURATION_S, TIMER_START_DELAY_S)
+const game = new Game(scrn, finalScrn, GAME_DURATION_S, TIMER_START_DELAY_S, role, gameSocket)
 
 game.run()
