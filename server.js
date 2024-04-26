@@ -96,4 +96,9 @@ game.on('connection', (socket) => {
         console.log('Flapped')
         socket.broadcast.emit('flap', framesPassed, secondsPassed)
     })
+
+    socket.on('current_score', (scorePerSecond, currentRate) => {
+        console.log('Score per second', scorePerSecond, 'Current rate', currentRate)
+        socket.broadcast.emit('current_score', scorePerSecond, currentRate)
+    })
 })

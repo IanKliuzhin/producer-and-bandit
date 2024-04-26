@@ -687,6 +687,10 @@ class Game {
                 this.secondsPassed = secondsPassed
                 this.ball.flap()
             })
+
+            gameSocket.on('current_score', (scorePerSecond, currentRate) => {
+                this.saveScores(scorePerSecond, currentRate)
+            })
         }
 
         gameSocket.on('set_tax', this.taxing.addTax)
@@ -725,24 +729,20 @@ class Game {
         this.secondsPassed++
         if (this.secondsPassed >= this.timerStartDelay + 1) {
             this.timerSecondsPassed++
-            this.decreaseScoreTaxed()
-            this.increaseScoreProduced()
 
-            this.saveResults()
+            if (role === 'producer') {
+                this.saveScores(this.scorePerSecond, -this.taxing.currentRate)
+                gameSocket.emit('current_score', this.scorePerSecond, -this.taxing.currentRate)
+            }
         }
     }
 
-    increaseScoreProduced = () => {
-        this.scoreProduced += this.scorePerSecond
-    }
+    saveScores = (scorePerSecond, currentRate) => {
+        this.scoreProduced += scorePerSecond
+        this.scoreTaxed -= currentRate
 
-    decreaseScoreTaxed = () => {
-        this.scoreTaxed -= this.taxing.currentRate
-    }
-
-    saveResults = () => {
-        this.results.scoresBySeconds.push(this.scorePerSecond)
-        this.results.taxesBySeconds.push(-this.taxing.currentRate)
+        this.results.scoresBySeconds.push(scorePerSecond)
+        this.results.taxesBySeconds.push(currentRate)
     }
 
     sendResults = () => {
@@ -785,7 +785,9 @@ class Game {
             this.finalScrn.classList.remove('notVisible')
         }, 1500)
 
-        this.sendResults()
+        if (role === 'producer') {
+            this.sendResults()
+        }
     }
 }
 
