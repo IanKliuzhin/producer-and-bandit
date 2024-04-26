@@ -12,6 +12,7 @@ const namespace = sessionStorage.getItem('namespace')
 const id = searchParams.get('id')
 // eslint-disable-next-line no-undef
 const gameSocket = io(namespace, { autoConnect: false })
+window.gameSocket = gameSocket
 gameSocket.auth = { id, role }
 gameSocket.auth = { id, role }
 gameSocket.connect()

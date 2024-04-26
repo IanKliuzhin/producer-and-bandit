@@ -19,32 +19,7 @@
 </head>
 
 <body>    
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-      import {
-        getDatabase,
-        ref,
-        set,
-        runTransaction,
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyDMq2VSE2fBCvpmCOcmwTSV_wnorslexw0",
-        authDomain: "effort-tapper.firebaseapp.com",
-        databaseURL: "https://effort-tapper-default-rtdb.firebaseio.com",
-        projectId: "effort-tapper",
-        storageBucket: "effort-tapper.appspot.com",
-        messagingSenderId: "1000034285154",
-        appId: "1:1000034285154:web:a6f1e84c5f4f2a236b033b",
-      };
-
-      const app = initializeApp(firebaseConfig);
-      window.db = getDatabase(app);
-      window.dbFunctions = {
-        ref,
-        set,
-      }
-
+    <script>
       window.onload = () => {
         const questions = [
           {
@@ -146,7 +121,7 @@
         };
         form.addEventListener("input", toggleButtonDisabled);
 
-        const handleSubmit = (e) => {
+        const handleSubmit = async (e) => {
           e.preventDefault();
           submitButton.style.display = "none";
           const wait = document.createElement("div");
@@ -158,16 +133,15 @@
             values[key] = value;
           });
           const urlParams = new URLSearchParams(window.location.search);
-          const id = urlParams.get("UUID");
+          const id = urlParams.get("id");
           if (id) {
-            runTransaction(ref(db, id), (oldValues) => ({ ...oldValues, ...values }))
-              .then(() => {
-                wait.innerHTML = "Thank you!";
-              })
-              .catch(() => {
-                wait.remove();
-                submitButton.style.display = "block";
-              });
+            try {
+              await gameSocket.emit('survey', values)
+              wait.innerHTML = "Thank you!";
+            } catch (err) {
+              wait.remove();
+              submitButton.style.display = "block";
+            }
           }
         };
         form.addEventListener("submit", handleSubmit);

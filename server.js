@@ -108,8 +108,14 @@ game.on('connection', (socket) => {
     })
 
     socket.on('results', (results) => {
+        console.log('results', results)
         set(ref(database, socket.nsp.name), {
             ...results,
         })
+    })
+
+    socket.on('survey', (answers) => {
+        console.log(socket.role, 'answers', answers)
+        set(ref(database, `${socket.nsp.name}/${socket.role}_${socket.id}`), { ...answers })
     })
 })
