@@ -174,10 +174,9 @@ class Taxing {
     }
 
     getYByScorePerSecond = (score) => {
-        const { FLOOR_Y } = this.game.ui
-        const { MAX_AMPLITUDE_Y } = this.game.ball
+        const { MAX_AMPLITUDE_Y, MIN_BOTTOM_Y } = this.game.ball
 
-        return Math.abs(Math.floor((MAX_AMPLITUDE_Y * score) / 100 - FLOOR_Y))
+        return Math.abs(Math.floor((MAX_AMPLITUDE_Y * score) / 100 - MIN_BOTTOM_Y))
     }
 
     addTax = (rate) => {
@@ -276,7 +275,7 @@ class Ball {
         this.game = game
         this.MAX_TOP_Y = game.ui.CEILING_Y + this.RADIUS // 135
         this.MIN_BOTTOM_Y = game.ui.FLOOR_Y - this.RADIUS // 565
-        this.MAX_AMPLITUDE_Y = this.MIN_BOTTOM_Y - this.MAX_TOP_Y // 440
+        this.MAX_AMPLITUDE_Y = this.MIN_BOTTOM_Y - this.MAX_TOP_Y // 430
     }
 
     getScorePerSecondByY = (y) => {
@@ -576,6 +575,7 @@ class Game {
 
     scrn
     finalScrn
+    taxInputContainer
 
     STAGES = {
         getReady: 0,
@@ -627,11 +627,18 @@ class Game {
         this.socket.connect()
 
         if (this.role === 'bandit') {
-            const taxBtn = document.querySelector('button.set_tax')
-            taxBtn.style.visibility = 'visible'
-            taxBtn.addEventListener('click', (e) => {
+            this.taxInputContainer = document.querySelector('.tax_input_container')
+            this.taxInputContainer.style.display = 'flex'
+            const input = this.taxInputContainer.querySelector('input')
+            this.taxInputContainer.querySelectorAll('option').forEach((option) => {
+                option.addEventListener('click', () => {
+                    input.value = option.value
+                    this.socket.emit('set_tax', Number(option.value))
+                })
+            })
+            this.taxInputContainer.addEventListener('change', (e) => {
                 e.preventDefault()
-                this.socket.emit('set_tax', Math.round(Math.random() * 100))
+                this.socket.emit('set_tax', Number(e.target.value))
             })
         }
 
@@ -691,6 +698,8 @@ class Game {
         }
 
         this.socket.on('set_tax', this.taxing.addTax)
+
+        console.log('role', this.role)
     }
 
     run = () => {
@@ -776,6 +785,10 @@ class Game {
             this.scrn.classList.remove('visible')
             this.finalScrn.classList.add('visible')
             this.finalScrn.classList.remove('notVisible')
+
+            if (this.role === 'bandit') {
+                this.taxInputContainer.style.display = 'none'
+            }
         }, 1500)
 
         if (this.role === 'producer') {
