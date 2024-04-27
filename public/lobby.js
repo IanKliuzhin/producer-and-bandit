@@ -19,8 +19,8 @@ const partnerStatusElement = document.querySelector('.partner_status')
 
 lobbySocket.on('partner-found', (namespace, assignedRole) => {
     console.log('A partner was found. Namespace:', namespace, ', role:', assignedRole)
-    sessionStorage.setItem('namespace', namespace)
-    sessionStorage.setItem('role', assignedRole)
+    localStorage.setItem('namespace', namespace)
+    localStorage.setItem('role', assignedRole)
     role = assignedRole
     connectionElement.classList.add('connected')
     const partnerElement = document.createElement('div')
@@ -43,8 +43,8 @@ lobbySocket.on('partner-disconnected', () => {
     partnerElement.textContent = 'Previous partner disconnected. Waiting for another one...'
     roleElement.before(partnerElement)
     roleElement.textContent = ''
-    sessionStorage.removeItem('role')
-    sessionStorage.removeItem('namespace')
+    localStorage.removeItem('role')
+    localStorage.removeItem('namespace')
     role = undefined
 })
 

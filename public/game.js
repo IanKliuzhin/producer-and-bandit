@@ -7,8 +7,8 @@ const finalScrn = document.getElementById('final')
 const GAME_DURATION_S = 60
 const TIMER_START_DELAY_S = 6
 
-const role = sessionStorage.getItem('role')
-const namespace = sessionStorage.getItem('namespace')
+const role = localStorage.getItem('role')
+const namespace = localStorage.getItem('namespace')
 
 // eslint-disable-next-line no-undef
 const gameSocket = io(namespace, { autoConnect: false })
@@ -630,10 +630,10 @@ class Game {
             this.taxInputContainer = document.querySelector('.tax_input_container')
             this.taxInputContainer.style.display = 'flex'
             const input = this.taxInputContainer.querySelector('input')
-            this.taxInputContainer.querySelectorAll('option').forEach((option) => {
-                option.addEventListener('click', () => {
-                    input.value = option.value
-                    this.socket.emit('set_tax', Number(option.value))
+            this.taxInputContainer.querySelectorAll('.marker').forEach((marker) => {
+                marker.addEventListener('click', () => {
+                    input.value = marker.dataset.value
+                    this.socket.emit('set_tax', Number(marker.dataset.value))
                 })
             })
             this.taxInputContainer.addEventListener('change', (e) => {

@@ -58,6 +58,7 @@ lobby.on('connection', (socket) => {
 
     socket.on('ready', () => {
         console.log(socket.id, 'ready')
+        socket.ready = true
         socket.broadcast.emit('partner-ready')
     })
 
@@ -71,9 +72,10 @@ lobby.on('connection', (socket) => {
             } else {
                 console.log('But he wasn\'t the user that disconnected')
             }
-        } else {
+        } else if (!socket.ready || !socket.partner.ready) {
             console.log('There wasn\'t any expectants at the moment. Making ex-partner of disconnected user expectant', socket.partner.userId)
             expectantId = socket.partner.userId
+            socket.partner.ready = false
             delete socket.partner.partner
             socket.partner.emit('partner-disconnected')
         }

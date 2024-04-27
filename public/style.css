@@ -122,7 +122,7 @@ h4 {
     width: 20px;
 }
 
-.tax_input_container datalist {
+.tax_input_container .markers {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -131,9 +131,8 @@ h4 {
     margin-top: -3px;
 }
   
-.tax_input_container datalist option {
-    padding: 0;
-    line-height: 21.4px;
+.tax_input_container .markers .marker {
+    height: 21.4px;
     cursor: pointer;
 }
 
