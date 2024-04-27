@@ -193,16 +193,18 @@ class Taxing {
         } = this.game
 
         if (secondsPassed > timerStartDelay) {
-            const framesTillIn =
-                ball.X / FRAME_SHIFT_X + framesPassed - ui.DISPLAY_WIDTH / FRAME_SHIFT_X
             if (this.taxes.length > 0) {
                 this.taxes[this.taxes.length - 1].framesTillOut =
                     ball.X / FRAME_SHIFT_X + framesPassed
             }
 
-            const framesTillOut = ball.X / FRAME_SHIFT_X + durationInFrames
-            console.log('Added tax', { rate, framesTillIn, framesTillOut })
-            this.taxes.push({ rate, framesTillIn, framesTillOut })
+            if (rate > 0) {
+                const framesTillIn =
+                    ball.X / FRAME_SHIFT_X + framesPassed - ui.DISPLAY_WIDTH / FRAME_SHIFT_X
+                const framesTillOut = ball.X / FRAME_SHIFT_X + durationInFrames
+                console.log('Added tax', { rate, framesTillIn, framesTillOut })
+                this.taxes.push({ rate, framesTillIn, framesTillOut })
+            }
         } else {
             const framesTillIn =
               game.ball.X / FRAME_SHIFT_X +
