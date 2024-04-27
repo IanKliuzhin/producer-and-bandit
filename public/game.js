@@ -358,7 +358,9 @@ class Ball {
         this.drawScorePerSecond()
     }
 
-    flap = () => {
+    flap = (y) => {
+        if (y !== undefined) this.y = y
+
         let thrust = 5.31 - Math.log1p(this.game.scorePerSecond / 1.5 || 1)
         this.fallingSpeed = -thrust
     }
@@ -665,7 +667,7 @@ class Game {
                         break
                     case this.STAGES.play:
                         this.ball.flap()
-                        this.socket.emit('flap', this.framesPassed, this.secondsPassed)
+                        this.socket.emit('flap', this.ball.y, this.framesPassed, this.secondsPassed)
                         this.results.flapsBySeconds.push(this.framesPassed)
                         this.results.flapsByScorePerSecond.push(this.scorePerSecond)
                         this.results.flapsByTaxPerSecond.push(this.taxing.currentRate)
@@ -687,11 +689,11 @@ class Game {
                 this.framesPassed = 0
             })
 
-            this.socket.on('flap', (framesPassed, secondsPassed) => {
+            this.socket.on('flap', (y, framesPassed, secondsPassed) => {
                 console.log('Flapped')
                 this.framesPassed = framesPassed
                 this.secondsPassed = secondsPassed
-                this.ball.flap()
+                this.ball.flap(y)
             })
 
             this.socket.on('current_score', (scorePerSecond, currentRate) => {
