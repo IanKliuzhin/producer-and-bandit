@@ -7,8 +7,7 @@ const finalScrn = document.getElementById('final')
 const GAME_DURATION_S = 60
 const TIMER_START_DELAY_S = 6
 
-const role = localStorage.getItem('role')
-const namespace = localStorage.getItem('namespace')
+const { role, namespace } = JSON.parse(localStorage.getItem(id))
 
 // eslint-disable-next-line no-undef
 const gameSocket = io(namespace, { autoConnect: false })
