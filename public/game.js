@@ -284,28 +284,31 @@ class Ball {
         return result
     }
 
-    calculate = () => {
+    calculateY = () => {
+        const { role } = this.game
         const { FLOOR_Y, CEILING_Y } = this.game.ui
 
-        const bottomY = this.y + this.RADIUS
-        const topY = this.y - this.RADIUS
+        if (role === 'producer') {
+            const bottomY = this.y + this.RADIUS
+            const topY = this.y - this.RADIUS
 
-        this.gravity = this.MIN_GRAVITY * (1 + (1.23 * this.getScorePerSecondByY(this.y)) / 100)
-        this.fallingSpeed += this.gravity
+            this.gravity = this.MIN_GRAVITY * (1 + (1.23 * this.getScorePerSecondByY(this.y)) / 100)
+            this.fallingSpeed += this.gravity
 
-        const isNextYLowerThenFloor = bottomY + this.fallingSpeed > FLOOR_Y
-        const isNextYHigherThenCeiling = topY + this.fallingSpeed < CEILING_Y
-        if (isNextYLowerThenFloor) {
-            this.y = FLOOR_Y - this.RADIUS
-        } else if (isNextYHigherThenCeiling) {
-            this.y = CEILING_Y + this.RADIUS
-        } else {
-            this.y += this.fallingSpeed
+            const isNextYLowerThenFloor = bottomY + this.fallingSpeed > FLOOR_Y
+            const isNextYHigherThenCeiling = topY + this.fallingSpeed < CEILING_Y
+            if (isNextYLowerThenFloor) {
+                this.y = FLOOR_Y - this.RADIUS
+            } else if (isNextYHigherThenCeiling) {
+                this.y = CEILING_Y + this.RADIUS
+            } else {
+                this.y += this.fallingSpeed
+            }
         }
-        this.coordYHistory.push(this.y)
+    }
 
-        let scorePerSecond = this.getScorePerSecondByY(this.y)
-        this.game.scorePerSecond = scorePerSecond
+    setYFromRemote = (y) => {
+        this.y = y
     }
 
     drawBall = () => {
@@ -337,29 +340,31 @@ class Ball {
     }
 
     draw = () => {
-        const { currentStage, STAGES } = this.game
+        const { currentStage, STAGES, role } = this.game
 
         if (currentStage !== STAGES.play) {
             this.drawBall()
             return
         }
 
-        this.calculate()
+        if (role === 'producer') {
+            this.calculateY()
+        }
 
         this.drawCrosshair()
 
         this.drawBall()
 
+        this.coordYHistory.push(this.y)
         if (this.coordYHistory.length > 1) {
             this.drawWay()
         }
 
+        this.game.scorePerSecond = this.getScorePerSecondByY(this.y)
         this.drawScorePerSecond()
     }
 
-    flap = (y) => {
-        if (y !== undefined) this.y = y
-
+    flap = () => {
         let thrust = 5.31 - Math.log1p(this.game.scorePerSecond / 1.5 || 1)
         this.fallingSpeed = -thrust
     }
@@ -666,7 +671,6 @@ class Game {
                         break
                     case this.STAGES.play:
                         this.ball.flap()
-                        this.socket.emit('flap', this.ball.y, this.framesPassed, this.secondsPassed)
                         this.results.flapsBySeconds.push(this.framesPassed)
                         this.results.flapsByScorePerSecond.push(this.scorePerSecond)
                         this.results.flapsByTaxPerSecond.push(this.taxing.currentRate)
@@ -688,11 +692,8 @@ class Game {
                 this.framesPassed = 0
             })
 
-            this.socket.on('flap', (y, framesPassed, secondsPassed) => {
-                console.log('Flapped')
-                this.framesPassed = framesPassed
-                this.secondsPassed = secondsPassed
-                this.ball.flap(y)
+            this.socket.on('y', (y) => {
+                this.ball.setYFromRemote(y)
             })
 
             this.socket.on('current_score', (scorePerSecond, currentRate) => {
@@ -731,6 +732,8 @@ class Game {
             if (this.framesPassed % (1000 / this.FRAME_DURATION_MS) === 0) {
                 this.update()
             }
+
+            if (this.role === 'producer') this.socket.emit('y', this.ball.y)
         }
     }
 
