@@ -184,7 +184,7 @@ class Taxing {
             ball,
             ui,
             framesPassed,
-            durationInFrames,
+            framesLeft,
             FRAME_SHIFT_X,
             timerStartDelay,
             secondsPassed,
@@ -200,7 +200,7 @@ class Taxing {
             if (rate > 0) {
                 const framesTillIn =
                     ball.X / FRAME_SHIFT_X + framesPassed - ui.DISPLAY_WIDTH / FRAME_SHIFT_X
-                const framesTillOut = ball.X / FRAME_SHIFT_X + durationInFrames
+                const framesTillOut = ball.X / FRAME_SHIFT_X + framesPassed + framesLeft
                 console.log('Added tax', { rate, framesTillIn, framesTillOut })
                 this.taxes.push({ rate, framesTillIn, framesTillOut })
             }
@@ -209,7 +209,7 @@ class Taxing {
               game.ball.X / FRAME_SHIFT_X +
               (timerStartDelay * 1000) / FRAME_DURATION_MS -
               ui.DISPLAY_WIDTH / FRAME_SHIFT_X
-            const framesTillOut = ball.X / FRAME_SHIFT_X + durationInFrames
+            const framesTillOut = ball.X / FRAME_SHIFT_X + framesPassed + framesLeft
             console.log('Added/changed first tax:', { rate, framesTillIn, framesTillOut })
             this.taxes[0] = { framesTillIn, framesTillOut, rate }
         }
@@ -594,7 +594,7 @@ class Game {
     durationInSeconds
     timerStartDelay
 
-    durationInFrames
+    framesLeft
 
     drawInterval
 
@@ -624,8 +624,6 @@ class Game {
         this.scrn.tabIndex = 1
 
         this.durationInSeconds = durationInSeconds
-        this.durationInFrames =
-            ((timerStartDelay + durationInSeconds) * 1000) / this.FRAME_DURATION_MS
         this.timerStartDelay = timerStartDelay
 
         this.drawer = new Drawer(this)
@@ -720,6 +718,7 @@ class Game {
 
     draw = () => {
         this.currentTime = +Date.now()
+        this.framesLeft = Math.floor((this.endTime - this.currentTime) / this.FRAME_DURATION_MS)
         this.drawer.clearScreen()
         this.taxing.draw()
         this.ui.drawBorders()
@@ -730,10 +729,8 @@ class Game {
         if (this.currentStage === this.STAGES.getReady) this.ui.updateTapImage()
 
         if (this.currentStage === this.STAGES.play) {
-            const framesLeft = this.durationInFrames - this.framesPassed
-
-            if (this.ball.X + framesLeft * this.FRAME_SHIFT_X <= this.ui.DISPLAY_WIDTH) {
-                this.ui.drawFinish(framesLeft)
+            if (this.ball.X + this.framesLeft * this.FRAME_SHIFT_X <= this.ui.DISPLAY_WIDTH) {
+                this.ui.drawFinish(this.framesLeft)
             }
 
             if (this.currentTime >= this.endTime) {
