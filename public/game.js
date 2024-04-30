@@ -191,7 +191,7 @@ class Taxing {
         } = this.game
 
         if (secondsPassed > timerStartDelay) {
-            if (this.taxes.length > 0) {
+            if (this.taxes.length > 0 && !this.taxes[this.taxes.length - 1].framesTillOut) {
                 this.taxes[this.taxes.length - 1].framesTillOut =
                     ball.X / FRAME_SHIFT_X + framesPassed
             }
