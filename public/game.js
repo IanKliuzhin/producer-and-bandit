@@ -184,7 +184,6 @@ class Taxing {
             ball,
             ui,
             framesPassed,
-            framesLeft,
             FRAME_SHIFT_X,
             timerStartDelay,
             secondsPassed,
@@ -200,18 +199,16 @@ class Taxing {
             if (rate > 0) {
                 const framesTillIn =
                     ball.X / FRAME_SHIFT_X + framesPassed - ui.DISPLAY_WIDTH / FRAME_SHIFT_X
-                const framesTillOut = ball.X / FRAME_SHIFT_X + framesPassed + framesLeft
-                console.log('Added tax', { rate, framesTillIn, framesTillOut })
-                this.taxes.push({ rate, framesTillIn, framesTillOut })
+                console.log('Added tax', { rate, framesTillIn })
+                this.taxes.push({ rate, framesTillIn })
             }
         } else {
             const framesTillIn =
               game.ball.X / FRAME_SHIFT_X +
               (timerStartDelay * 1000) / FRAME_DURATION_MS -
               ui.DISPLAY_WIDTH / FRAME_SHIFT_X
-            const framesTillOut = ball.X / FRAME_SHIFT_X + framesPassed + framesLeft
-            console.log('Added/changed first tax:', { rate, framesTillIn, framesTillOut })
-            this.taxes[0] = { framesTillIn, framesTillOut, rate }
+            console.log('Added/changed first tax:', { rate, framesTillIn })
+            this.taxes[0] = { framesTillIn, rate }
         }
 
         console.log('Taxes:')
@@ -223,14 +220,19 @@ class Taxing {
     }
 
     draw = () => {
-        const { ui, ball, drawer, currentStage, STAGES, framesPassed, FRAME_SHIFT_X } = this.game
+        const { ui, ball, drawer, currentStage, STAGES, framesPassed, framesLeft, FRAME_SHIFT_X }
+            = this.game
         const { DISPLAY_WIDTH, FLOOR_Y } = ui
         const { X: ballX } = ball
 
         if (currentStage === STAGES.play) {
             this.currentRate = 0
             for (let { rate, framesTillIn, framesTillOut } of this.taxes) {
-                if (framesPassed > framesTillIn && framesPassed < framesTillOut) {
+                if (framesPassed > framesTillIn) {
+                    if (framesPassed > framesTillOut) continue
+                    if (!framesTillOut) {
+                        framesTillOut = ball.X / FRAME_SHIFT_X + framesPassed + framesLeft
+                    }
                     const startX = (framesTillIn - framesPassed) * FRAME_SHIFT_X + DISPLAY_WIDTH
                     let endX = (framesTillOut - framesPassed) * FRAME_SHIFT_X
                     if (endX > DISPLAY_WIDTH) endX = DISPLAY_WIDTH
@@ -559,7 +561,7 @@ class UI {
             FRAME_SHIFT_X,
         } = this.game
 
-        const lineX = ballX + framesLeft * FRAME_SHIFT_X + FRAME_SHIFT_X / 2
+        const lineX = ballX + framesLeft * FRAME_SHIFT_X
 
         this.game.drawer.drawVerticalLine(lineX, this.CEILING_Y + 10, scrn.height, 3.5, 'black')
         this.game.drawer.drawText({
