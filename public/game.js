@@ -599,6 +599,9 @@ class Game {
     drawInterval
 
     framesPassed = 0
+    startTime
+    currentTime
+    endTime
     secondsPassed = 0
     timerSecondsPassed = 0
 
@@ -665,9 +668,8 @@ class Game {
             this.scrn.addEventListener('click', () => {
                 switch (this.currentStage) {
                     case this.STAGES.getReady:
-                        this.currentStage = this.STAGES.play
-                        this.framesPassed = 0
                         this.socket.emit('start')
+                        this.play()
                         break
                     case this.STAGES.play:
                         this.ball.flap()
@@ -688,8 +690,7 @@ class Game {
         if (this.role === 'bandit') {
             this.socket.on('start', () => {
                 console.log('Started')
-                this.currentStage = this.STAGES.play
-                this.framesPassed = 0
+                this.play()
             })
 
             this.socket.on('y', (y) => {
@@ -710,7 +711,15 @@ class Game {
         this.drawInterval = setInterval(this.draw, this.FRAME_DURATION_MS)
     }
 
+    play = () => {
+        this.startTime = +Date.now()
+        this.endTime = this.startTime + (this.timerStartDelay + this.durationInSeconds) * 1000
+        this.currentStage = this.STAGES.play
+        this.framesPassed = 0
+    }
+
     draw = () => {
+        this.currentTime = +Date.now()
         this.drawer.clearScreen()
         this.taxing.draw()
         this.ui.drawBorders()
@@ -727,9 +736,9 @@ class Game {
                 this.ui.drawFinish(framesLeft)
             }
 
-            if (framesLeft < 0) this.endGame()
-
-            if (this.framesPassed % (1000 / this.FRAME_DURATION_MS) === 0) {
+            if (this.currentTime >= this.endTime) {
+                this.endGame()
+            } else if ((this.currentTime - this.startTime) % 1000 < this.FRAME_DURATION_MS) {
                 this.update()
             }
 
