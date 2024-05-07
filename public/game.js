@@ -190,7 +190,7 @@ class Taxing {
             FRAME_DURATION_MS,
         } = this.game
 
-        if (secondsPassed > timerStartDelay) {
+        if (secondsPassed >= timerStartDelay) {
             if (this.taxes.length > 0 && !this.taxes[this.taxes.length - 1].framesTillOut) {
                 this.taxes[this.taxes.length - 1].framesTillOut =
                     ball.X / FRAME_SHIFT_X + framesPassed
@@ -220,18 +220,26 @@ class Taxing {
     }
 
     draw = () => {
-        const { ui, ball, drawer, currentStage, STAGES, framesPassed, framesLeft, FRAME_SHIFT_X }
-            = this.game
+        const {
+            ui,
+            ball,
+            drawer,
+            currentStage,
+            STAGES,
+            framesPassed,
+            durationInFrames,
+            FRAME_SHIFT_X,
+        } = this.game
         const { DISPLAY_WIDTH, FLOOR_Y } = ui
         const { X: ballX } = ball
 
         if (currentStage === STAGES.play) {
             this.currentRate = 0
             for (let { rate, framesTillIn, framesTillOut } of this.taxes) {
-                if (framesPassed > framesTillIn) {
+                if (framesPassed >= framesTillIn) {
                     if (framesPassed > framesTillOut) continue
                     if (!framesTillOut) {
-                        framesTillOut = ball.X / FRAME_SHIFT_X + framesPassed + framesLeft
+                        framesTillOut = ball.X / FRAME_SHIFT_X + durationInFrames
                     }
                     const startX = (framesTillIn - framesPassed) * FRAME_SHIFT_X + DISPLAY_WIDTH
                     let endX = (framesTillOut - framesPassed) * FRAME_SHIFT_X
@@ -596,11 +604,14 @@ class Game {
     durationInSeconds
     timerStartDelay
 
-    framesLeft
 
     drawInterval
 
+    durationInFrames
+    /** The amount of frames passed by this moment if setInterval worked without delays */
     framesPassed = 0
+    /** The amount of frames left if setInterval will work without delays */
+    framesLeft
     startTime
     currentTime
     endTime
@@ -626,6 +637,8 @@ class Game {
         this.scrn.tabIndex = 1
 
         this.durationInSeconds = durationInSeconds
+        this.durationInFrames =
+            (timerStartDelay + durationInSeconds) * 1000 / this.FRAME_DURATION_MS
         this.timerStartDelay = timerStartDelay
 
         this.drawer = new Drawer(this)
@@ -708,7 +721,7 @@ class Game {
     }
 
     run = () => {
-        this.drawInterval = setInterval(this.draw, this.FRAME_DURATION_MS)
+        this.drawInterval = setInterval(this.updateEveryFrame, this.FRAME_DURATION_MS)
     }
 
     play = () => {
@@ -718,15 +731,29 @@ class Game {
         this.framesPassed = 0
     }
 
-    draw = () => {
+    updateEveryFrame = () => {
+        this.draw()
+
         this.currentTime = +Date.now()
         this.framesLeft = Math.floor((this.endTime - this.currentTime) / this.FRAME_DURATION_MS)
+        this.framesPassed = this.durationInFrames - this.framesLeft
+
+
+        if (
+            Math.floor((this.currentTime - this.startTime) / 1000) >= this.secondsPassed + 1
+        ) {
+            this.updateEverySecond()
+        }
+
+        if (this.role === 'producer') this.socket.emit('y', this.ball.y)
+    }
+
+    draw = () => {
         this.drawer.clearScreen()
         this.taxing.draw()
         this.ui.drawBorders()
         this.ball.draw()
         this.ui.draw()
-        this.framesPassed++
 
         if (this.currentStage === this.STAGES.getReady) this.ui.updateTapImage()
 
@@ -734,18 +761,11 @@ class Game {
             if (this.ball.X + this.framesLeft * this.FRAME_SHIFT_X <= this.ui.DISPLAY_WIDTH) {
                 this.ui.drawFinish(this.framesLeft)
             }
-
-            if (this.currentTime >= this.endTime) {
-                this.endGame()
-            } else if ((this.currentTime - this.startTime) % 1000 < this.FRAME_DURATION_MS) {
-                this.update()
-            }
-
-            if (this.role === 'producer') this.socket.emit('y', this.ball.y)
         }
     }
 
-    update = () => {
+
+    updateEverySecond = () => {
         this.secondsPassed++
         if (this.secondsPassed >= this.timerStartDelay + 1) {
             this.timerSecondsPassed++
@@ -755,6 +775,10 @@ class Game {
                 this.saveScores(this.scorePerSecond, -this.taxing.currentRate)
                 this.socket.emit('current_score', this.scorePerSecond, -this.taxing.currentRate)
             }
+        }
+
+        if (this.timerSecondsPassed === this.durationInSeconds) {
+            this.endGame()
         }
     }
 
@@ -789,6 +813,8 @@ class Game {
     }
 
     endGame = () => {
+        this.draw()
+
         this.currentStage = this.STAGES.gameOver
 
         clearInterval(this.drawInterval)
