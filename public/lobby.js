@@ -1,8 +1,8 @@
 const searchParams = new URLSearchParams(window.location.search)
-const id = searchParams.get('id')
+const userId = searchParams.get('id')
 // eslint-disable-next-line no-undef
 const lobbySocket = io('/lobby', { autoConnect: false })
-lobbySocket.auth = { userId:id }
+lobbySocket.auth = { userId }
 lobbySocket.connect()
 
 let role
@@ -20,7 +20,7 @@ const partnerStatusElement = document.querySelector('.partner_status')
 lobbySocket.on('partner-found', (namespace, assignedRole) => {
     console.log('A partner was found. Namespace:', namespace, ', role:', assignedRole)
     role = assignedRole
-    localStorage.setItem(id, JSON.stringify({ namespace, role }))
+    localStorage.setItem(userId, JSON.stringify({ namespace, role }))
     connectionElement.classList.add('connected')
     const partnerElement = document.createElement('div')
     partnerElement.classList.add('partner')
@@ -42,7 +42,7 @@ lobbySocket.on('partner-disconnected', () => {
     partnerElement.textContent = 'Previous partner disconnected. Waiting for another one...'
     roleElement.before(partnerElement)
     roleElement.textContent = ''
-    localStorage.removeItem(id)
+    localStorage.removeItem(userId)
     role = undefined
 })
 

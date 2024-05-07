@@ -12,7 +12,7 @@ const { role, namespace } = JSON.parse(localStorage.getItem(id))
 // eslint-disable-next-line no-undef
 const gameSocket = io(namespace, { autoConnect: false })
 window.gameSocket = gameSocket
-gameSocket.auth = { id, role: this.role }
+gameSocket.auth = { userId: id, role }
 
 class Drawer {
     game

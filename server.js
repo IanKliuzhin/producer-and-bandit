@@ -57,7 +57,7 @@ lobby.on('connection', (socket) => {
     }
 
     socket.on('ready', () => {
-        console.log(socket.id, 'ready')
+        console.log(socket.userId, 'ready')
         socket.ready = true
         socket.broadcast.emit('partner-ready')
     })
@@ -85,9 +85,9 @@ lobby.on('connection', (socket) => {
 const game = io.of(/\/game__\w+__\w+/)
 
 game.on('connection', (socket) => {
-    socket.id = socket.handshake.auth.id
+    socket.userId = socket.handshake.auth.userId
     socket.role = socket.handshake.auth.role
-    console.log(socket.id, socket.role, 'connected to game')
+    console.log(socket.userId, socket.role, 'connected to game')
 
     socket.on('set_tax', (rate) => {
         console.log('Tax received, rate', rate)
@@ -117,6 +117,6 @@ game.on('connection', (socket) => {
 
     socket.on('survey', (answers) => {
         console.log(socket.role, 'answers', answers)
-        set(ref(database, `${socket.nsp.name}/${socket.role}_${socket.id}`), { ...answers })
+        set(ref(database, `${socket.nsp.name}/${socket.role}_${socket.userId}`), { ...answers })
     })
 })
