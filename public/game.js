@@ -562,6 +562,30 @@ class UI {
         this.tapImageIndex = this.tapImageIndex % this.tapImages.length
     }
 
+    drawStart = (framesPassed) => {
+        const {
+            scrn,
+            ball: { X: ballX },
+            timerStartDelay,
+            FRAME_DURATION_MS,
+            FRAME_SHIFT_X,
+        } = this.game
+
+        const lineX =
+            ballX
+            + (timerStartDelay * 1000) * FRAME_SHIFT_X / FRAME_DURATION_MS
+            - framesPassed * FRAME_SHIFT_X
+
+        this.game.drawer.drawVerticalLine(lineX, this.CEILING_Y + 10, scrn.height, 3.5, 'black')
+        this.game.drawer.drawText({
+            text: 'Start',
+            x: lineX - 45,
+            y: this.CEILING_Y,
+            font: 'tahoma_28_bold',
+            color: 'black',
+        })
+    }
+
     drawFinish = (framesLeft) => {
         const {
             scrn,
@@ -623,6 +647,9 @@ class Game {
     scoreProduced = 0
     scoreTaxed = 0
 
+    framesPassedBeforeStartAppears
+    framesPassedBeforeStartDesappears
+
     FRAME_DURATION_MS = 20
     FRAME_SHIFT_X = 2
 
@@ -645,6 +672,13 @@ class Game {
         this.ui = new UI(this)
         this.ball = new Ball(this) // should be after ui
         this.taxing = new Taxing(this) // should be after ball & ui
+
+        this.framesPassedBeforeStartDesappears =
+            this.ball.X / this.FRAME_SHIFT_X
+            + (this.timerStartDelay * 1000) / this.FRAME_DURATION_MS
+        this.framesPassedBeforeStartAppears =
+            this.framesPassedBeforeStartDesappears
+            - this.ui.DISPLAY_WIDTH / this.FRAME_SHIFT_X
 
         this.currentStage = this.STAGES.getReady
 
@@ -758,6 +792,13 @@ class Game {
         if (this.currentStage === this.STAGES.getReady) this.ui.updateTapImage()
 
         if (this.currentStage === this.STAGES.play) {
+            if (
+                this.framesPassedBeforeStartAppears <= this.framesPassed &&
+                this.framesPassed <= this.framesPassedBeforeStartDesappears
+            ) {
+                this.ui.drawStart(this.framesPassed)
+            }
+
             if (this.ball.X + this.framesLeft * this.FRAME_SHIFT_X <= this.ui.DISPLAY_WIDTH) {
                 this.ui.drawFinish(this.framesLeft)
             }
