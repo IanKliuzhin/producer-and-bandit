@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000
 const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
-    connectionStateRecovery: true,
+    connectionStateRecovery: {},
     cleanupEmptyChildNamespaces: true,
 })
 const firebaseApp = initializeApp(firebaseConfig)
@@ -103,6 +103,30 @@ game.on('connection', (socket) => {
         socket.broadcast.emit('y', y)
     })
 
+    socket.on('check_backup', async (callback) => {
+        console.log('check_backup')
+        try {
+            const backup = await new Promise((resolve) => {
+                socket.timeout(3000).broadcast.emit('check_backup', 'ads', (_err, response) => {
+                    console.log('response[0]', response[0])
+                    resolve(response[0])
+                })
+            })
+            console.log('backup', backup)
+            callback(backup)
+        } catch (error) {
+            console.log('error', error)
+        }
+    })
+
+    socket.on('paused', () => {
+        socket.broadcast.emit('paused')
+    })
+
+    socket.on('resumed', () => {
+        socket.broadcast.emit('resumed')
+    })
+
     socket.on('current_score', (scorePerSecond, currentRate) => {
         console.log('Score per second', scorePerSecond, 'Current rate', currentRate)
         socket.broadcast.emit('current_score', scorePerSecond, currentRate)
@@ -118,5 +142,10 @@ game.on('connection', (socket) => {
     socket.on('survey', (answers) => {
         console.log(socket.role, 'answers', answers)
         set(ref(database, `${socket.nsp.name}/${socket.role}_${socket.userId}`), { ...answers })
+    })
+
+    socket.on('disconnect', () => {
+        console.log(`${socket.role} ${socket.userId} disconnected from game`)
+        socket.broadcast.emit('partner_disconnected')
     })
 })

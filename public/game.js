@@ -14,6 +14,31 @@ const gameSocket = io(namespace, { autoConnect: false })
 window.gameSocket = gameSocket
 gameSocket.auth = { userId: id, role }
 
+const showModal = (text, actionText, actionButtonText, actionTimeout) => {
+    const modal = document.querySelector('.modal_wall')
+    modal.querySelector('.modal_text').innerHTML = text
+    modal.classList.add('visible')
+
+    if (actionText) {
+        const modalAction = modal.querySelector('.modal_action')
+        modalAction.querySelector('.modal_action_text').innerHTML = actionText
+        const modalActionButton = modalAction.querySelector('.modal_action_button')
+        const action = () => {
+            window.location.assign(`./index.html${window.location.search}`)
+            modalActionButton.removeEventListener('click', action)
+        }
+        modalActionButton.innerHTML = actionButtonText
+        modalActionButton.addEventListener('click', action)
+        if (actionTimeout) {
+            setTimeout(() => {
+                modalAction.classList.add('visible')
+            }, actionTimeout)
+        } else {
+            modalAction.classList.add('visible')
+        }
+    }
+}
+
 class Drawer {
     game
     sctx
@@ -639,6 +664,7 @@ class Game {
     startTime
     currentTime
     endTime
+    pauseStartTime
     secondsPassed = 0
     timerSecondsPassed = 0
 
@@ -724,13 +750,26 @@ class Game {
                         this.results.flapsByScorePerSecond.push(this.scorePerSecond)
                         this.results.flapsByTaxPerSecond.push(this.taxing.currentRate)
                         break
-                    // case state.finalScreenGameStep:
-                    // state.currentGameStep = state.indexGameStep;
-                    // point.speed = 0;
-                    // point.y = 100;
-                    // UI.score.currentGameStep = 0;
-                    // break;
                 }
+            })
+
+            window.addEventListener('pagehide', () => {
+                console.log('pagehide')
+                if (this.currentStage !== this.STAGES.gameOver) {
+                    const backup = this.configureBackup(true)
+
+                    localStorage.setItem(`backup_${id}`, JSON.stringify(backup))
+                }
+            })
+
+            this.socket.on('check_backup', (err, callback) => {
+                console.log('err', err)
+                let backup = false
+                if (this.pauseStartTime) {
+                    backup = this.configureBackup()
+                }
+                console.log('check_backup', backup)
+                callback(JSON.stringify(backup))
             })
         }
 
@@ -752,9 +791,91 @@ class Game {
         this.socket.on('set_tax', this.taxing.addTax)
 
         console.log('role', this.role)
+
+        document.addEventListener('visibilitychange', () => {
+            console.log('visibilitychange', document.hidden, document.visibilityState)
+            if (document.hidden && this.currentStage !== this.STAGES.gameOver) {
+                this.pause()
+                this.socket.emit('paused')
+                console.log('paused')
+            } else if (!this.drawInterval) {
+                this.socket.emit('resumed')
+                this.resume()
+                console.log('resumed')
+            }
+        })
+
+        this.socket.on('paused', () => {
+            if (this.currentStage !== this.STAGES.gameOver) {
+                this.pause()
+                console.log('paused because remote')
+
+                const modalText = 'Game paused because the partner has minimized or closed the page. Waiting for their return for 3 sec...'
+                const modalActionText = 'If you don\'t want to wait more, you can return to the lobby and wait for another partner'
+                const modalActionButtonText = 'Return'
+                showModal(modalText, modalActionText, modalActionButtonText, 3000)
+            }
+        })
+
+        this.socket.on('resumed', () => {
+            console.log('resumed after pause because remote')
+            document.querySelector('.modal_wall').classList.remove('visible')
+            this.resume()
+        })
+
+        this.socket.on('partner_disconnected', () => {
+            if (this.currentStage !== this.STAGES.gameOver) {
+                this.pause()
+                console.log('The partner disconnected')
+
+                const modalText = 'The partner has disconnected from the game'
+                const modalActionText = 'You can wait for them to return or go back to the lobby and wait for another partner'
+                const modalActionButtonText = 'To the lobby'
+                showModal(modalText, modalActionText, modalActionButtonText)
+            }
+        })
+    }
+
+    checkForRecoveryAndRun = () => {
+        if (this.role === 'producer') {
+            const backup = localStorage.getItem(`backup_${id}`)
+            if (backup) {
+                console.log('found backup in local storage, recovering')
+                this.recover(JSON.parse(backup))
+                localStorage.removeItem(`backup_${id}`)
+            } else {
+                console.log('There isn\'t any backup, starting from the beginning')
+            }
+
+            this.run()
+        }
+
+        if (this.role === 'bandit') {
+            this.socket.timeout(5000).emit('check_backup', (err, response) => {
+                console.log('err', err)
+                console.log('response', response)
+                const backup = JSON.parse(response)
+                console.log('backup', backup)
+                if (err || backup === null) {
+                    console.log('check_backup err', err)
+
+                    const modalText = 'The partner has disconnected from the game'
+                    const modalActionText = 'You can return to the lobby and wait for another partner'
+                    const modalActionButtonText = 'Return'
+                    showModal(modalText, modalActionText, modalActionButtonText)
+                } else if (backup) {
+                    this.recover(backup)
+                    this.run()
+                } else {
+                    console.log('There isn\'t any backup, starting from the beginning')
+                    this.run()
+                }
+            })
+        }
     }
 
     run = () => {
+        console.log('run')
         this.drawInterval = setInterval(this.updateEveryFrame, this.FRAME_DURATION_MS)
     }
 
@@ -805,6 +926,82 @@ class Game {
         }
     }
 
+    configureBackup = (withResults) => {
+        const backup = {
+            secondsPassed: this.secondsPassed,
+            timerSecondsPassed: this.timerSecondsPassed,
+            coordYHistory: this.ball.coordYHistory,
+            ballY: this.ball.y,
+            scoreProduced: this.scoreProduced,
+            scoreTaxed: this.scoreTaxed,
+            currentStage: this.currentStage,
+            framesPassed: this.framesPassed,
+            taxes: this.taxing.taxes,
+        }
+
+        if (withResults) {
+            backup.results = this.results
+        }
+
+        return backup
+    }
+
+    recover = (backup) => {
+        const {
+            secondsPassed,
+            timerSecondsPassed,
+            coordYHistory,
+            ballY,
+            scoreProduced,
+            scoreTaxed,
+            currentStage,
+            framesPassed,
+            taxes,
+            results,
+        } = backup
+        clearInterval(this.drawInterval)
+        this.drawInterval = undefined
+
+        this.secondsPassed = secondsPassed
+        this.timerSecondsPassed = timerSecondsPassed
+        this.scoreProduced = scoreProduced
+        this.scoreTaxed = scoreTaxed
+
+        this.ball.coordYHistory = coordYHistory
+        this.ball.y = ballY
+        this.currentStage = currentStage
+        this.framesPassed = framesPassed
+        this.startTime = +Date.now() - framesPassed * this.FRAME_DURATION_MS
+        this.endTime =
+                this.startTime + (this.timerStartDelay + this.durationInSeconds) * 1000
+        this.taxing.taxes = taxes
+
+        if (results) {
+            this.results = results
+        }
+
+        this.socket.emit('resumed')
+        console.log('recovered')
+    }
+
+    pause = () => {
+        console.log('pause')
+        this.pauseStartTime = +Date.now()
+        clearInterval(this.drawInterval)
+        this.drawInterval = undefined
+    }
+
+    resume = () => {
+        console.log('resume')
+        if (this.pauseStartTime) {
+            const pauseDuration = +Date.now() - this.pauseStartTime
+            this.startTime += pauseDuration
+            this.endTime += pauseDuration
+            this.pauseStartTime = undefined
+        }
+
+        this.run()
+    }
 
     updateEverySecond = () => {
         this.secondsPassed++
@@ -834,6 +1031,7 @@ class Game {
     }
 
     sendResults = () => {
+        console.log('sending results')
         const { results } = this
 
         results.produced = this.scoreProduced
@@ -880,4 +1078,4 @@ class Game {
 
 const game = new Game(scrn, finalScrn, GAME_DURATION_S, TIMER_START_DELAY_S, role, gameSocket)
 
-game.run()
+game.checkForRecoveryAndRun()
