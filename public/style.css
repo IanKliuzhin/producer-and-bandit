@@ -82,13 +82,13 @@ h4 {
     display: inline-block;
 }
 
-.connection button {
+.connection button.show_instructions {
     display: none;
+    width: 180px;
 }
 
-.connection.connected button {
+.connection button.show_instructions.visible {
     display: inline-block;
-    width: 180px;
 }
 
 .instructions {
