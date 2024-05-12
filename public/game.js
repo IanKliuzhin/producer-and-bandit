@@ -263,7 +263,6 @@ class Taxing {
         const { X: ballX } = ball
 
         if (currentStage === STAGES.play) {
-            this.currentRate = 0
             for (let { rate, framesTillIn, framesTillOut } of this.taxes) {
                 if (framesPassed >= framesTillIn) {
                     if (framesPassed > framesTillOut) continue
@@ -510,6 +509,7 @@ class UI {
             text: `${scoreTaxed}¢`,
             x: scrn.width - 150,
             y: 70,
+            color: 'taxRate',
             align: 'right',
         })
         drawer.drawText({
@@ -525,7 +525,7 @@ class UI {
         const { drawer, scoreProduced, scoreTaxed } = this.game
 
         drawer.drawText({
-            text: `${scoreProduced + scoreTaxed}¢`,
+            text: `${scoreProduced - scoreTaxed}¢`,
             x: 500,
             y: 40,
             align: 'right',
@@ -1035,9 +1035,9 @@ class Game {
             this.timerSecondsPassed++
 
             if (this.role === 'producer') {
-                this.updateScores(this.scorePerSecond, -this.taxing.currentRate)
-                this.saveScores(this.scorePerSecond, -this.taxing.currentRate)
-                this.socket.emit('current_score', this.scorePerSecond, -this.taxing.currentRate)
+                this.updateScores(this.scorePerSecond, this.taxing.currentRate)
+                this.saveScores(this.scorePerSecond, this.taxing.currentRate)
+                this.socket.emit('current_score', this.scorePerSecond, this.taxing.currentRate)
             }
         }
 
@@ -1048,7 +1048,7 @@ class Game {
 
     updateScores = (scorePerSecond, currentRate) => {
         this.scoreProduced += scorePerSecond
-        this.scoreTaxed -= currentRate
+        this.scoreTaxed += currentRate
     }
 
     saveScores = (scorePerSecond, currentRate) => {
@@ -1062,7 +1062,7 @@ class Game {
 
         results.produced = this.scoreProduced
         results.taxed = this.scoreTaxed
-        results.profit = this.scoreProduced + this.scoreTaxed
+        results.profit = this.scoreProduced - this.scoreTaxed
 
         results.flapsBySeconds = results.flapsBySeconds
             .map((flapFrame) =>
