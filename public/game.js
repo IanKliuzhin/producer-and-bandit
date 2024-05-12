@@ -761,6 +761,7 @@ class Game {
                         break
                 }
             })
+            this.scrn.classList.add('clickable')
 
             window.addEventListener('pagehide', () => {
                 console.log('pagehide')
