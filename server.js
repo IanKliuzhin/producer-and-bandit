@@ -11,7 +11,9 @@ const PORT = process.env.PORT || 3000
 const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
-    connectionStateRecovery: {},
+    connectionStateRecovery: {
+        maxDisconnectionDuration: 2 * 60 * 1000,
+    },
     cleanupEmptyChildNamespaces: true,
 })
 const firebaseApp = initializeApp(firebaseConfig)
@@ -107,7 +109,7 @@ game.on('connection', (socket) => {
         console.log('check_backup')
         try {
             const backup = await new Promise((resolve) => {
-                socket.timeout(3000).broadcast.emit('check_backup', 'ads', (_err, response) => {
+                socket.timeout(7000).broadcast.emit('check_backup', 'ads', (_err, response) => {
                     console.log('response[0]', response[0])
                     resolve(response[0])
                 })

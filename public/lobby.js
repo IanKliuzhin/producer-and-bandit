@@ -1,5 +1,6 @@
 const searchParams = new URLSearchParams(window.location.search)
 const userId = searchParams.get('id')
+localStorage.removeItem(`backup_${userId}`)
 // eslint-disable-next-line no-undef
 const lobbySocket = io('/lobby', { autoConnect: false })
 lobbySocket.auth = { userId }

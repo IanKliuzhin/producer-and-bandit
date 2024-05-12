@@ -39,6 +39,10 @@ const showModal = (text, actionText, actionButtonText, actionTimeout) => {
     }
 }
 
+const hideModal = () => {
+    document.querySelector('.modal_wall').classList.remove('visible')
+}
+
 class Drawer {
     game
     sctx
@@ -191,7 +195,7 @@ class Drawer {
 class Taxing {
     game
     taxes = []
-    currentRate
+    currentRate = 0
 
     constructor(game) {
         this.game = game
@@ -446,6 +450,8 @@ class UI {
                 this.drawGetReady()
                 break
             case STAGES.gameOver:
+                this.drawScore()
+                this.drawTimer()
                 this.drawGameOver()
                 break
             case STAGES.play:
@@ -657,8 +663,9 @@ class Game {
     drawInterval
 
     durationInFrames
-    /** The amount of frames passed by this moment if setInterval worked without delays */
-    framesPassed = 0
+    /** The amount of frames passed by this moment
+    * if setInterval would have worked without delays */
+    framesPassed
     /** The amount of frames left if setInterval will work without delays */
     framesLeft
     startTime
@@ -692,6 +699,8 @@ class Game {
         this.durationInSeconds = durationInSeconds
         this.durationInFrames =
             (timerStartDelay + durationInSeconds) * 1000 / this.FRAME_DURATION_MS
+        this.framesPassed = 0
+        this.framesLeft = this.durationInFrames
         this.timerStartDelay = timerStartDelay
 
         this.drawer = new Drawer(this)
@@ -763,13 +772,14 @@ class Game {
             })
 
             this.socket.on('check_backup', (err, callback) => {
-                console.log('err', err)
+                console.log('check_backup err', err)
                 let backup = false
                 if (this.pauseStartTime) {
                     backup = this.configureBackup()
                 }
                 console.log('check_backup', backup)
                 callback(JSON.stringify(backup))
+                hideModal()
             })
         }
 
@@ -784,7 +794,12 @@ class Game {
             })
 
             this.socket.on('current_score', (scorePerSecond, currentRate) => {
+                console.log('current_score scorePerSecond, currentRate', scorePerSecond, currentRate)
                 this.updateScores(scorePerSecond, currentRate)
+
+                if (this.currentStage === this.STAGES.gameOver) {
+                    this.draw()
+                }
             })
         }
 
@@ -819,7 +834,7 @@ class Game {
 
         this.socket.on('resumed', () => {
             console.log('resumed after pause because remote')
-            document.querySelector('.modal_wall').classList.remove('visible')
+            hideModal()
             this.resume()
         })
 
@@ -841,6 +856,7 @@ class Game {
             const backup = localStorage.getItem(`backup_${id}`)
             if (backup) {
                 console.log('found backup in local storage, recovering')
+                console.log('backup', JSON.parse(backup))
                 this.recover(JSON.parse(backup))
                 localStorage.removeItem(`backup_${id}`)
             } else {
@@ -851,23 +867,25 @@ class Game {
         }
 
         if (this.role === 'bandit') {
-            this.socket.timeout(5000).emit('check_backup', (err, response) => {
+            this.socket.timeout(10000).emit('check_backup', (err, response) => {
                 console.log('err', err)
                 console.log('response', response)
                 const backup = JSON.parse(response)
                 console.log('backup', backup)
-                if (err || backup === null) {
+                if (err) {
                     console.log('check_backup err', err)
 
-                    const modalText = 'The partner has disconnected from the game'
+                    const modalText = 'The partner is not connected to the game'
                     const modalActionText = 'You can return to the lobby and wait for another partner'
                     const modalActionButtonText = 'Return'
                     showModal(modalText, modalActionText, modalActionButtonText)
                 } else if (backup) {
                     this.recover(backup)
+                    hideModal()
                     this.run()
                 } else {
                     console.log('There isn\'t any backup, starting from the beginning')
+                    hideModal()
                     this.run()
                 }
             })
@@ -880,6 +898,7 @@ class Game {
     }
 
     play = () => {
+        console.log('play')
         this.startTime = +Date.now()
         this.endTime = this.startTime + (this.timerStartDelay + this.durationInSeconds) * 1000
         this.currentStage = this.STAGES.play
@@ -890,9 +909,14 @@ class Game {
         this.draw()
 
         this.currentTime = +Date.now()
-        this.framesLeft = Math.floor((this.endTime - this.currentTime) / this.FRAME_DURATION_MS)
-        this.framesPassed = this.durationInFrames - this.framesLeft
+        if (this.currentStage === this.STAGES.getReady) {
+            this.framesPassed++
+        }
 
+        if (this.currentStage === this.STAGES.play) {
+            this.framesLeft = Math.floor((this.endTime - this.currentTime) / this.FRAME_DURATION_MS)
+            this.framesPassed = this.durationInFrames - this.framesLeft
+        }
 
         if (
             Math.floor((this.currentTime - this.startTime) / 1000) >= this.secondsPassed + 1
@@ -971,9 +995,11 @@ class Game {
         this.ball.y = ballY
         this.currentStage = currentStage
         this.framesPassed = framesPassed
-        this.startTime = +Date.now() - framesPassed * this.FRAME_DURATION_MS
-        this.endTime =
-                this.startTime + (this.timerStartDelay + this.durationInSeconds) * 1000
+        if (currentStage === this.STAGES.play) {
+            this.startTime = +Date.now() - framesPassed * this.FRAME_DURATION_MS
+            this.endTime =
+                    this.startTime + (this.timerStartDelay + this.durationInSeconds) * 1000
+        }
         this.taxing.taxes = taxes
 
         if (results) {
@@ -1053,6 +1079,8 @@ class Game {
 
     endGame = () => {
         this.draw()
+
+        localStorage.removeItem(`backup_${userId}`)
 
         this.currentStage = this.STAGES.gameOver
 
