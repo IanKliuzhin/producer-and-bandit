@@ -1,5 +1,5 @@
 const searchParams = new URLSearchParams(window.location.search)
-const id = searchParams.get('id')
+const userId = searchParams.get('id')
 
 const scrn = document.getElementById('canvas')
 const finalScrn = document.getElementById('final')
@@ -7,12 +7,12 @@ const finalScrn = document.getElementById('final')
 const GAME_DURATION_S = 60
 const TIMER_START_DELAY_S = 6
 
-const { role, namespace } = JSON.parse(localStorage.getItem(id))
+const { role, namespace } = JSON.parse(localStorage.getItem(userId))
 
 // eslint-disable-next-line no-undef
 const gameSocket = io(namespace, { autoConnect: false })
 window.gameSocket = gameSocket
-gameSocket.auth = { userId: id, role }
+gameSocket.auth = { userId, role }
 
 const showModal = (text, actionText, actionButtonText, actionTimeout) => {
     const modal = document.querySelector('.modal_wall')
@@ -766,8 +766,7 @@ class Game {
                 console.log('pagehide')
                 if (this.currentStage !== this.STAGES.gameOver) {
                     const backup = this.configureBackup(true)
-
-                    localStorage.setItem(`backup_${id}`, JSON.stringify(backup))
+                    localStorage.setItem(`backup_${userId}`, JSON.stringify(backup))
                 }
             })
 
@@ -853,12 +852,12 @@ class Game {
 
     checkForRecoveryAndRun = () => {
         if (this.role === 'producer') {
-            const backup = localStorage.getItem(`backup_${id}`)
+            const backup = localStorage.getItem(`backup_${userId}`)
             if (backup) {
                 console.log('found backup in local storage, recovering')
                 console.log('backup', JSON.parse(backup))
                 this.recover(JSON.parse(backup))
-                localStorage.removeItem(`backup_${id}`)
+                localStorage.removeItem(`backup_${userId}`)
             } else {
                 console.log('There isn\'t any backup, starting from the beginning')
             }
