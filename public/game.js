@@ -684,8 +684,8 @@ class Game {
     framesPassedBeforeStartAppears
     framesPassedBeforeStartDesappears
 
-    FRAME_DURATION_MS = 20
-    FRAME_SHIFT_X = 2
+    FRAME_DURATION_MS
+    FRAME_SHIFT_X
 
     hasTimerFinished = false
 
@@ -705,6 +705,9 @@ class Game {
         this.finalScrn = finalScrn
         this.scrn.tabIndex = 1
         this.taxInputContainer = taxInputContainer
+
+        this.FRAME_DURATION_MS = role === 'producer' ? 20 : 50
+        this.FRAME_SHIFT_X = this.FRAME_DURATION_MS / 10
 
         this.durationInSeconds = durationInSeconds
         this.durationInFrames =
