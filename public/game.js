@@ -212,30 +212,30 @@ class Taxing {
         const {
             ball,
             ui,
+            framesLeft,
             framesPassed,
             FRAME_SHIFT_X,
-            timerStartDelay,
-            secondsPassed,
-            FRAME_DURATION_MS,
+            framesPassedBeforeStartAppears,
         } = this.game
 
-        if (secondsPassed >= timerStartDelay) {
-            if (this.taxes.length > 0 && !this.taxes[this.taxes.length - 1].framesTillOut) {
-                this.taxes[this.taxes.length - 1].framesTillOut =
-                    ball.X / FRAME_SHIFT_X + framesPassed
-            }
+        if (framesPassed > framesPassedBeforeStartAppears) {
+            // if Start line already entered the view
+            if (framesLeft > (ui.DISPLAY_WIDTH - ball.X)/ FRAME_SHIFT_X) {
+                // if Finish line isn't visible
+                if (this.taxes.length > 0 && !this.taxes[this.taxes.length - 1].framesTillOut) {
+                    // if the last tax's final point haven't set yet
+                    this.taxes[this.taxes.length - 1].framesTillOut =
+                        framesPassed + ui.DISPLAY_WIDTH / FRAME_SHIFT_X
+                }
 
-            if (rate > 0) {
-                const framesTillIn =
-                    ball.X / FRAME_SHIFT_X + framesPassed - ui.DISPLAY_WIDTH / FRAME_SHIFT_X
-                console.log('Added tax', { rate, framesTillIn })
-                this.taxes.push({ rate, framesTillIn })
+                if (rate > 0) {
+                    const framesTillIn = framesPassed
+                    console.log('Added tax', { rate, framesTillIn })
+                    this.taxes.push({ rate, framesTillIn })
+                }
             }
         } else {
-            const framesTillIn =
-              game.ball.X / FRAME_SHIFT_X +
-              (timerStartDelay * 1000) / FRAME_DURATION_MS -
-              ui.DISPLAY_WIDTH / FRAME_SHIFT_X
+            const framesTillIn = framesPassedBeforeStartAppears
             console.log('Added/changed first tax:', { rate, framesTillIn })
             this.taxes[0] = { framesTillIn, rate }
         }
