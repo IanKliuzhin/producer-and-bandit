@@ -107,7 +107,7 @@ h4 {
 }
 
 .tax_input_container {
-    display: none;
+    display: flex;
     width: 57px;
     height: 700px;
     background-color: white;
@@ -117,6 +117,11 @@ h4 {
     padding-top: 126px;
     justify-content: flex-start;
     align-content: flex-start;
+    visibility: hidden;
+}
+
+.tax_input_container.visible {
+    visibility: visible;
 }
 
 .tax_input_container input {

@@ -3,6 +3,7 @@ const userId = searchParams.get('id')
 
 const scrn = document.getElementById('canvas')
 const finalScrn = document.getElementById('final')
+const taxInputContainer = document.querySelector('.tax_input_container')
 
 const GAME_DURATION_S = 60
 const TIMER_START_DELAY_S = 6
@@ -688,13 +689,22 @@ class Game {
 
     hasTimerFinished = false
 
-    constructor(scrn, finalScrn, durationInSeconds, timerStartDelay, role, socket) {
+    constructor(
+        scrn,
+        finalScrn,
+        taxInputContainer,
+        durationInSeconds,
+        timerStartDelay,
+        role,
+        socket,
+    ) {
         this.role = role
         this.socket = socket
 
         this.scrn = scrn
         this.finalScrn = finalScrn
         this.scrn.tabIndex = 1
+        this.taxInputContainer = taxInputContainer
 
         this.durationInSeconds = durationInSeconds
         this.durationInFrames =
@@ -718,22 +728,6 @@ class Game {
         this.currentStage = this.STAGES.getReady
 
         this.socket.connect()
-
-        if (this.role === 'bandit') {
-            this.taxInputContainer = document.querySelector('.tax_input_container')
-            this.taxInputContainer.style.display = 'flex'
-            const input = this.taxInputContainer.querySelector('input')
-            this.taxInputContainer.querySelectorAll('.marker').forEach((marker) => {
-                marker.addEventListener('click', () => {
-                    input.value = marker.dataset.value
-                    this.socket.emit('set_tax', Number(marker.dataset.value))
-                })
-            })
-            this.taxInputContainer.addEventListener('change', (e) => {
-                e.preventDefault()
-                this.socket.emit('set_tax', Number(e.target.value))
-            })
-        }
 
         if (this.role === 'producer') {
             this.results = {
@@ -787,6 +781,19 @@ class Game {
             this.socket.on('start', () => {
                 console.log('Started')
                 this.play()
+
+                this.taxInputContainer.classList.add('visible')
+                const input = this.taxInputContainer.querySelector('input')
+                this.taxInputContainer.querySelectorAll('.marker').forEach((marker) => {
+                    marker.addEventListener('click', () => {
+                        input.value = marker.dataset.value
+                        this.socket.emit('set_tax', Number(marker.dataset.value))
+                    })
+                })
+                this.taxInputContainer.addEventListener('change', (e) => {
+                    e.preventDefault()
+                    this.socket.emit('set_tax', Number(e.target.value))
+                })
             })
 
             this.socket.on('y', (y) => {
@@ -1075,6 +1082,7 @@ class Game {
         results.flapsByTaxPerSecond = results.flapsByTaxPerSecond.join(', ')
 
         this.socket.emit('results', results)
+        console.log('results', results)
     }
 
     endGame = () => {
@@ -1086,16 +1094,17 @@ class Game {
 
         clearInterval(this.drawInterval)
 
+        if (this.role === 'bandit') {
+            this.taxInputContainer.classList.remove('visible')
+        }
+
         setTimeout(() => {
+            this.taxInputContainer.remove()
             this.finalScrn.style.display = 'block'
             this.scrn.classList.add('notVisible')
             this.scrn.classList.remove('visible')
             this.finalScrn.classList.add('visible')
             this.finalScrn.classList.remove('notVisible')
-
-            if (this.role === 'bandit') {
-                this.taxInputContainer.style.display = 'none'
-            }
         }, 1500)
 
         if (this.role === 'producer') {
@@ -1104,6 +1113,14 @@ class Game {
     }
 }
 
-const game = new Game(scrn, finalScrn, GAME_DURATION_S, TIMER_START_DELAY_S, role, gameSocket)
+const game = new Game(
+    scrn,
+    finalScrn,
+    taxInputContainer,
+    GAME_DURATION_S,
+    TIMER_START_DELAY_S,
+    role,
+    gameSocket,
+)
 
 game.checkForRecoveryAndRun()
